@@ -117,4 +117,14 @@ Select `analyze` and your agent when prompted. To update, run `npx skills@latest
 
 ---
 
-Built by [moultonpoint](https://github.com/moultonpoint). I document what I build with AI agents on [TikTok](https://www.tiktok.com/@moultonpoint) and [YouTube](https://www.youtube.com/@moultonpoint). MIT licensed: use it, change it, ship it.
+Built by [moultonpoint](https://github.com/moultonpoint). I document what I build with AI agents. MIT licensed: use it, change it, ship it.
+
+<p align="center">
+  <a href="https://www.tiktok.com/@moultonpoint">TikTok</a> ·
+  <a href="https://www.youtube.com/@moultonpoint">YouTube</a> ·
+  <a href="https://www.instagram.com/moultonpoint_/">Instagram</a> ·
+  <a href="https://x.com/moultonpoint">X</a> ·
+  <a href="https://substack.com/@moultonpoint">Substack</a> ·
+  <a href="https://github.com/moultonpoint">GitHub</a> ·
+  <a href="https://linktr.ee/moultonpoint">Linktree</a>
+</p>
