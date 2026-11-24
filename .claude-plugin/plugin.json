@@ -1,0 +1,21 @@
+{
+  "name": "moultonpoint-skills",
+  "version": "1.0.0",
+  "description": "Local content research tools for coding agents. Analyze short-form videos in one HTML report.",
+  "author": {
+    "name": "moultonpoint",
+    "url": "https://github.com/moultonpoint"
+  },
+  "repository": "https://github.com/moultonpoint/skills",
+  "keywords": [
+    "tiktok",
+    "reels",
+    "shorts",
+    "content",
+    "video-analysis"
+  ],
+  "license": "MIT",
+  "skills": [
+    "./skills/content/analyze"
+  ]
+}

@@ -1,0 +1,5 @@
+/analyze/
+.DS_Store
+node_modules/
+/analyze/**/*.mp4
+.claude/

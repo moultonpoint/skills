@@ -1,0 +1,3 @@
+interface:
+  display_name: "Analyze"
+  short_description: "Break down short-form videos into one HTML report"
