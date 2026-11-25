@@ -98,13 +98,24 @@ export function baselineStats(entries, targetId, nowSec, views) {
   if (ok.length < 5) return null;
   const med = (xs) => { const s = [...xs].sort((a, b) => a - b), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
   const mv = med(ok.map((e) => e.view_count));
-  const liked = ok.filter((e) => e.like_count != null), dated = ok.filter((e) => e.timestamp);
-  return { posts: ok.length, median_views: mv, median_like_pct: liked.length >= 5 ? +med(liked.map((e) => (100 * e.like_count) / e.view_count)).toFixed(2) : null,
-    multiple: views ? +(views / mv).toFixed(2) : null, from: dated.length ? new Date(Math.min(...dated.map((e) => e.timestamp)) * 1000).toISOString().slice(0, 10) : null };
+  // A rate needs at least 5 posts that report the count; missing counts stay missing, not 0%.
+  const rate = (k, dp) => { const xs = ok.filter((e) => typeof e[k] === 'number'); return xs.length >= 5 ? +med(xs.map((e) => (100 * e[k]) / e.view_count)).toFixed(dp) : null; };
+  const dated = ok.filter((e) => e.timestamp), durs = ok.filter((e) => e.duration > 0).map((e) => e.duration);
+  const times = entries.map((e) => e.timestamp).filter(Number.isFinite), span = (Math.max(...times) - Math.min(...times)) / (7 * 86400);
+  const url = (e) => [e.webpage_url, e.url].find((u) => /^https:\/\//.test(String(u))) ?? null;
+  return { posts: ok.length, median_views: mv, median_like_pct: rate('like_count', 2),
+    multiple: views ? +(views / mv).toFixed(2) : null, from: dated.length ? new Date(Math.min(...dated.map((e) => e.timestamp)) * 1000).toISOString().slice(0, 10) : null,
+    median_comment_pct: rate('comment_count', 3), median_share_pct: rate('repost_count', 3), median_save_pct: rate('save_count', 3),
+    median_duration_s: durs.length >= 5 ? med(durs) : null,
+    posts_per_week: times.length >= 5 && span > 0 ? +((times.length - 1) / span).toFixed(1) : null,
+    // The creator's other recent hits (2x their median or more): a free outlier list for ideas.
+    outliers: ok.filter((e) => e.view_count >= 2 * mv).sort((a, b) => b.view_count - a.view_count).slice(0, 5)
+      .map((e) => ({ id: String(e.id), title: String(e.title || e.description || '').slice(0, 160), url: url(e), views: e.view_count, multiple: +(e.view_count / mv).toFixed(2),
+        date: e.timestamp ? new Date(e.timestamp * 1000).toISOString().slice(0, 10) : null })) };
 }
 
 const supportedHost = /^(?:(?:www|m|vm|vt)\.)?(tiktok\.com|youtube\.com|youtu\.be|instagram\.com)$/;
-function platform(url) {
+export function platform(url) {
   const u = URL.canParse(url) && new URL(url);
   if (!u || /[\\\s]/.test(url) || !url.startsWith('https://') || u.protocol !== 'https:' || u.username || u.password || u.port || !supportedHost.test(u.hostname))
     throw new Error(`expected a supported HTTPS video URL: ${url}`);
@@ -118,10 +129,13 @@ export function downloaderArgs(options, url, cookies) {
     ...options, ...(cookies ? ['--cookies-from-browser', cookies] : []), '--', new URL(url).href];
 }
 
-function baseline(info, cookies) {
-  const list = info.extractor_key === 'TikTok' && info.uploader ? `https://www.tiktok.com/@${info.uploader}`
+// The creator's 30 most recent posts from the flat channel list (no downloads). null when there is no list for this platform.
+export function channelUrl(info) {
+  return info.extractor_key === 'TikTok' && info.uploader ? `https://www.tiktok.com/@${info.uploader}`
     : info.extractor_key === 'Youtube' && info.channel_url ? `${info.channel_url}/shorts` : null;
-  if (!list) return { error: `no channel list for ${info.extractor_key}` };
+}
+
+export function channelEntries(list, cookies) {
   let best = [];
   for (let i = 0; i < 2; i++) { // TikTok's list intermittently zeroes many counts; retry once and keep the fuller answer
     try {
@@ -131,12 +145,19 @@ function baseline(info, cookies) {
       if (best.length && good(best) >= 0.8 * best.length) break;
     } catch { /* retry */ }
   }
+  return best;
+}
+
+function baseline(info, cookies) {
+  const list = channelUrl(info);
+  if (!list) return { error: `no channel list for ${info.extractor_key}` };
+  const best = channelEntries(list, cookies);
   if (!best.length) return { error: 'channel list fetch failed' };
   return baselineStats(best, info.id, Date.now() / 1000, info.view_count) ?? { error: 'fewer than 5 usable posts' };
 }
 
 // Caption hints worth a look: disclosure tags or an outbound link. A link alone proves nothing about payment.
-export const promoSignals = (cap) => [...new Set((String(cap ?? '').match(/#(ad|ads|paid\w*|sponsor\w*|\w*partner\w*|\w*ambassador\w*|affiliate\w*|gifted|collab\w*)\b|https?:\/\/\S*[^\s.,;:!?)\]"'>]/gi) || []).map((m) => (m[0] === '#' ? m.toLowerCase() : m)))]; // URLs keep their case
+export const promoSignals = (cap) => [...new Set((String(cap ?? '').match(/#(ad|ads|paid\w*|sponsor\w*|\w*partner\w*|\w*ambassador\w*|affiliate\w*|gifted|collab\w*)\b|https?:\/\/\S*[^\s.,;:!?)\]"'>]|\b(?:[a-z0-9-]+\.)+[a-z]{2,}\/\S*[^\s.,;:!?)\]"'>]/gi) || []).map((m) => (m[0] === '#' ? m.toLowerCase() : m)))]; // URLs keep their case
 
 // Move only completed results into view. A failed build leaves prior evidence intact.
 export function commitVideo(tmp, dir, replace) {
@@ -172,7 +193,8 @@ export function readTranscript(dir, media, transcribe) {
     const transcript = parseVtt(fs.readFileSync(path.join(dir, f), 'utf8'));
     if (transcript.length) return { transcript, transcript_source: 'platform captions' };
   }
-  if (!transcribe) throw new Error('no usable English platform captions (VTT or SRT)');
+  // No captions (every Instagram Reel, music-only or non-English videos): keep the frames and stats, describe the hook from the screen.
+  if (!transcribe) return { transcript: [], transcript_source: 'none: no English platform captions' };
   const output = path.join(dir, 'transcript-words.json');
   run(process.execPath, [transcribe, media, output]);
   const { words } = JSON.parse(fs.readFileSync(output, 'utf8'));
@@ -181,6 +203,8 @@ export function readTranscript(dir, media, transcribe) {
   fs.unlinkSync(output);
   return { transcript: wordsToLines(words), transcript_source: 'local transcriber' };
 }
+
+const pctOf = (n, of, dp) => (typeof n === 'number' ? +(100 * n / of).toFixed(dp) : null);
 
 function build(url, dir, { keep, cookies, transcribe }) {
   const args = ['--no-playlist', '--playlist-items', '1', '--write-info-json', '--write-subs', '--write-auto-subs',
@@ -202,11 +226,14 @@ function build(url, dir, { keep, cookies, transcribe }) {
   const fr = frames(mp4, cuts, dur, dir);
   const v = info.view_count || 0;
   const video = {
-    url, id: String(info.id), platform: info.extractor_key, uploader: info.uploader || info.channel, uploader_url: info.uploader_url || info.channel_url,
+    // yt-dlp's canonical link drops share-tracking parameters (?igsh=, ?_t=) that identify whoever shared it.
+    url: info.webpage_url || url, id: String(info.id), platform: info.extractor_key, uploader: info.uploader || info.channel, uploader_url: info.uploader_url || info.channel_url,
     upload_date: info.upload_date, duration: dur, caption: info.description || info.title,
     stats: { views: info.view_count, likes: info.like_count, comments: info.comment_count, shares: info.repost_count, saves: info.save_count ?? null },
     // TikTok rounds big counts (1.1M, 91.1K), so rates and multiples on large videos are approximate.
-    rates: v ? { like_pct: info.like_count != null ? +(100 * info.like_count / v).toFixed(2) : null, comment_pct: info.comment_count != null ? +(100 * info.comment_count / v).toFixed(3) : null } : null,
+    rates: v ? { like_pct: pctOf(info.like_count, v, 2), comment_pct: pctOf(info.comment_count, v, 3), share_pct: pctOf(info.repost_count, v, 3), save_pct: pctOf(info.save_count, v, 3) } : null,
+    followers: info.channel_follower_count ?? null, fetched_at: new Date().toISOString().slice(0, 10),
+    sound: info.track ? { track: info.track, artist: [].concat(info.artists ?? info.artist ?? []).join(', ') || null } : null,
     baseline: baseline(info, cookies), promo_signals: promoSignals(info.description || info.title),
     shots: { count: cuts.length + 1, avg_len_s: +(dur / (cuts.length + 1)).toFixed(2), cuts },
     frames: fr, transcript_source, transcript,
@@ -231,12 +258,13 @@ export function parseArgs(args) {
         if (!fs.statSync(value, { throwIfNoEntry: false })?.isFile()) throw new Error('--transcribe requires an existing script file');
         opts.transcribe = path.resolve(value);
       } else {
-        if (!['chrome', 'firefox', 'safari'].includes(value)) throw new Error('expected browser chrome, firefox or safari');
+        if (!['chrome', 'firefox', 'safari', 'edge', 'brave'].includes(value)) throw new Error('expected browser chrome, firefox, safari, edge or brave');
         opts.cookies = value;
       }
     } else throw new Error(`unknown option: ${arg}`);
   }
   const [outDir, ...urls] = positional;
+  if (outDir?.includes('%')) throw new Error('the output folder name cannot contain % (yt-dlp and ffmpeg read it as a pattern)');
   if (!outDir || !urls.length) throw new Error('usage: fetch.mjs <outDir> <url...> [--keep] [--replace] [--cookies-from-browser browser] [--transcribe script]');
   urls.forEach(platform);
   return { outDir, urls, opts };
@@ -252,7 +280,7 @@ if (isMain()) {
   fs.mkdirSync(outDir, { recursive: true });
   let failed = 0;
   for (const u of urls) {
-    try { const v = one(u, outDir, opts); console.log(`${v.id}\t${v.uploader}\t${v.stats.views} views\t${v.baseline.multiple ?? '?'}x median\t${v.transcript_source}\t${v.shots.count} shots`); }
+    try { const v = one(u, outDir, opts); console.log(`${v.id}\t${v.uploader}\t${v.stats.views} views\t${v.baseline.multiple ?? '?'}x usual\t${v.transcript_source}\t${v.shots.count} shots`); }
     catch (e) { failed++; console.error(`FAILED ${u}: ${e.message}`); }
   }
   process.exitCode = batchStatus(failed, urls.length);
