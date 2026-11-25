@@ -392,7 +392,8 @@ assert.equal(figures('1.1–1.2M views on 2026-11-24'), '<b class="fig">1.1–1.
 assert.equal(profileList('https://www.tiktok.com/@kallaway.marketing?lang=en'), 'https://www.tiktok.com/@kallaway.marketing');
 assert.equal(profileList('https://www.youtube.com/@moultonpoint/videos'), 'https://www.youtube.com/@moultonpoint/shorts');
 for (const bad of ['https://www.tiktok.com/@u/video/1', 'https://www.youtube.com/watch?v=x', 'https://www.instagram.com/u/']) assert.throws(() => profileList(bad), /profile/);
-const ranked = rank([...[1, 2, 3, 4, 5].map((i) => ({ view_count: i * 100, timestamp: 1, url: 'https://x/' + i, title: 'p' + i })), { view_count: 9000, timestamp: 1e9, url: 'javascript:x' }], 1e9 + 60);
-assert.deepEqual([ranked.median_views, ranked.posts[0].multiple, ranked.posts[0].fresh, ranked.posts[0].url, ranked.posts[1].multiple], [300, 30, true, null, 2]); // 500 against the other four (median 250), as fetch measures it
+assert.equal(rank([1, 2, 3, 4, 5].map((i) => ({ view_count: i * 100, timestamp: 1 })), 1e9), null, 'five settled posts leave each only 4 peers, short of the 5 fetch needs');
+const ranked = rank([...[1, 2, 3, 4, 5, 6].map((i) => ({ view_count: i * 100, timestamp: 1, url: 'https://x/' + i, title: 'p' + i })), { view_count: 9000, timestamp: 1e9, url: 'javascript:x' }], 1e9 + 60);
+assert.deepEqual([ranked.median_views, ranked.posts[0].multiple, ranked.posts[0].fresh, ranked.posts[0].url, ranked.posts[1].multiple], [350, 25.71, true, null, 2]); // 600 against the other five (median 300), as fetch measures it
 fs.rmSync(dir, { recursive: true });
 console.log('selfcheck ok');
