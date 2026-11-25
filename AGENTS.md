@@ -10,6 +10,8 @@ Run these checks from the repository root after edits:
 
 ```sh
 node scripts/check-frontmatter.mjs
-node skills/content/analyze/scripts/selfcheck.mjs
+node skills/content/analyze/scripts/selfcheck.mjs scripts/check-frontmatter.mjs
 claude plugin validate . --strict
 ```
+
+CI runs the first two. The plugin validation needs the Claude Code CLI, so run it locally before a release.
