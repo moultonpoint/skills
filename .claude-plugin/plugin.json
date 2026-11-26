@@ -1,7 +1,7 @@
 {
   "name": "moultonpoint-skills",
   "version": "1.0.0",
-  "description": "Local content research tools for coding agents. Analyze short-form videos in one HTML report.",
+  "description": "Content research tools for coding agents. Analyze short-form videos in one HTML report.",
   "author": {
     "name": "moultonpoint",
     "url": "https://github.com/moultonpoint"
