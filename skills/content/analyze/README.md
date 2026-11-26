@@ -1,6 +1,6 @@
 # analyze
 
-Paste TikTok, Instagram Reels or YouTube Shorts links into your agent and get one HTML report: the first three seconds frame by frame, the opening line, where every shot cuts, the story beats, and how each video did against its creator's usual views. It runs on your computer and needs no account.
+Paste TikTok, Instagram Reels or YouTube Shorts links into your agent and get one HTML report: the first three seconds frame by frame, the opening line, where every shot cuts, the story beats, and how each video did against its creator's usual views. The downloads and frames stay on your computer, and your agent's model reads them to write the analysis. No account needed.
 
 <p align="center"><img src="../../../.github/assets/report.webp" alt="An analyze report: the first three seconds frame by frame, the opening line, stats and the hook breakdown." width="820"></p>
 

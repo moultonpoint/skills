@@ -3,7 +3,7 @@
 <p align="center">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-15171C?style=flat-square" alt="MIT license"></a>
   <a href="https://github.com/moultonpoint/skills/actions/workflows/check.yml"><img src="https://img.shields.io/github/actions/workflow/status/moultonpoint/skills/check.yml?style=flat-square&label=checks&color=15171C" alt="Checks"></a>
-  <img src="https://img.shields.io/badge/runs-locally-15171C?style=flat-square" alt="Runs locally">
+  <img src="https://img.shields.io/badge/downloads-local-15171C?style=flat-square" alt="Downloads stay local">
 </p>
 
 <p align="center">
@@ -22,7 +22,7 @@ With several links, the report opens on the video that beat its creator's usual 
 
 ## Why I made these
 
-I wanted to know how a short video opens, where it cuts and whether it got more views than the creator usually gets. Some paid tools sell that breakdown. My agent can do it locally with yt-dlp and ffmpeg.
+I wanted to know how a short video opens, where it cuts and whether it got more views than the creator usually gets. Some paid tools sell that breakdown. My agent can do it with yt-dlp and ffmpeg. The downloads and frames stay on my computer, and the agent's model writes the analysis.
 
 ## First run
 

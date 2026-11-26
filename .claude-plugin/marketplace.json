@@ -1,6 +1,6 @@
 {
   "name": "moultonpoint",
-  "description": "Free, local content-research skills from moultonpoint.",
+  "description": "Free content-research skills from moultonpoint.",
   "owner": {
     "name": "moultonpoint",
     "url": "https://github.com/moultonpoint"
@@ -9,7 +9,7 @@
     {
       "name": "moultonpoint-skills",
       "source": "./",
-      "description": "Local content research tools for coding agents. Analyze short-form videos in one HTML report.",
+      "description": "Content research tools for coding agents. Analyze short-form videos in one HTML report.",
       "category": "productivity",
       "keywords": [
         "tiktok",
